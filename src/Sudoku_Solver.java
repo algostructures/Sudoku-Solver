@@ -4,6 +4,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.*;
+import java.util.stream.IntStream;
+
 public class Sudoku_Solver {
     /*
      Grid is Formatted as 
@@ -34,9 +36,9 @@ public class Sudoku_Solver {
     private HashMap<Integer, HashSet<Integer>> units;
     private HashMap<Integer, HashSet<Integer>> peers;
     
-    final int ROWS = 9;
-    final int COLS = 9;
-    final int SQR = 9;
+    private final int ROWS = 9;
+    private final int COLS = 9;
+    private final int SQR = 9;
 
     /**
      * Constructor to Initialize unitList, units, peers 
@@ -51,26 +53,25 @@ public class Sudoku_Solver {
         }
         bw = new BufferedWriter(fw);
         out = new PrintWriter(bw);
-        unitList = new ArrayList<HashSet<Integer>>();
-        units = new HashMap<Integer, HashSet<Integer>>();
-        peers = new HashMap<Integer, HashSet<Integer>>();
+        unitList = new ArrayList<>();
+        units = new HashMap<>();
+        peers = new HashMap<>();
 
         @SuppressWarnings("unchecked")
         HashSet<Integer>[][] squareBoxUnits = (HashSet<Integer>[][]) Array.newInstance(HashSet.class, 3, 3);
-        
-        /**
-         * creating a square box, there are 9 boxes in 9*9 Sudoku.
-         * 9 HashSet for every place in 9 boxes 
-         * Each place can will have set of possible values 1-9  
-         * */
-        for (int i = 0; i < 3; i++) {
+
+        /*
+          creating a square box, there are 9 boxes in 9*9 Sudoku.
+          9 HashSet for every place in 9 boxes
+          Each place can will have set of possible values 1-9
+          */
+        for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
-                squareBoxUnits[i][j] = new HashSet<Integer>();
-        }
+                squareBoxUnits[i][j] = new HashSet<>();
 
         for (int i = 0; i < ROWS; i++) {
-            HashSet<Integer> row = new HashSet<Integer>();
-            HashSet<Integer> column = new HashSet<Integer>();
+            HashSet<Integer> row = new HashSet<>();
+            HashSet<Integer> column = new HashSet<>();
             for (int j = 0; j < COLS; j++) {
                 row.add(i*ROWS + j);
                 column.add(j*COLS + i);
@@ -81,8 +82,7 @@ public class Sudoku_Solver {
         }
 
         for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++)
-                unitList.add(squareBoxUnits[i][j]);
+            unitList.addAll(Arrays.asList(squareBoxUnits[i]).subList(0, 3));
         }
 
         for (int i = 0; i < ROWS; i ++) {
@@ -94,9 +94,7 @@ public class Sudoku_Solver {
                             units.put(i*ROWS + j, temp);
                         }
                         HashSet<Integer> temp = units.get(i*ROWS + j);
-                        for (Integer k: unit) {
-                            temp.add(k);
-                        }
+                        temp.addAll(unit);
                         units.put(i*ROWS + j, temp);
                     }
                 }
@@ -129,7 +127,7 @@ public class Sudoku_Solver {
         if (values == null)
             return null;
         HashSet<Integer> valueSet = new HashSet<Integer>(values.get(key));
-        valueSet.remove(v); 
+        valueSet.remove(v);
         for (Integer i : valueSet) {
             if (eliminate(values, key, i) == null)
                 return null;
@@ -181,8 +179,8 @@ public class Sudoku_Solver {
             if (assign(values, unit, v) == null)
                 return null;
         }
-        //System.out.println("Elimination :");
-        //boardPrinter(values);
+        out.println("Elimination :");
+        boardPrinter(values);
         return values;
     }
     
@@ -244,9 +242,7 @@ public class Sudoku_Solver {
         MyCustomHashMap<Integer, HashSet<Integer>> cloned = new MyCustomHashMap<Integer, HashSet<Integer>>(new HashSet<Integer>());
         for (Map.Entry<Integer, HashSet<Integer>> entry: original.entrySet()) {
             HashSet<Integer> temp = cloned.get(entry.getKey());
-            HashSet<Integer> clonedHashSet = new HashSet<Integer>();
-            for (Integer i: entry.getValue())
-                clonedHashSet.add(i);
+            HashSet<Integer> clonedHashSet = new HashSet<Integer>(entry.getValue());
             cloned.put(entry.getKey(), clonedHashSet);
         }
 
@@ -261,13 +257,8 @@ public class Sudoku_Solver {
      **/
     private MyCustomHashMap<Integer, HashSet<Integer>> initializeValues() {
         MyCustomHashMap<Integer, HashSet<Integer>> values = new MyCustomHashMap<Integer, HashSet<Integer>>(new HashSet<Integer>());
-        for (int i = 0; i < ROWS*COLS; i++) {
-            for (int j= 1; j < COLS+1; j++)    {
-                HashSet<Integer> temp = values.get(i);
-                temp.add(j);
-                values.put(i, temp);
-            }
-        }
+        IntStream.range(0, ROWS*COLS).forEach(i-> IntStream.range(1, COLS + 1).forEach(j ->
+                values.computeIfAbsent(i, k -> new HashSet<>()).add(j)));
         return values;
     }
     
@@ -286,7 +277,6 @@ public class Sudoku_Solver {
             if (gridValues[i] != '0' && gridValues[i] != '.') {
                 MyCustomHashMap<Integer, HashSet<Integer>> clonedValues = deepCloneValues(values);
                 values = assign(clonedValues, i, Integer.parseInt(gridValues[i]+""));
-                
             }
         }
         boardPrinter(values);
